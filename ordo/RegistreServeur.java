@@ -24,10 +24,12 @@ public class RegistreServeur {
 	}
 	
 	public static void retirerServeur(String name) {
-		Serveur ser = listeserveurs.remove(name);
+		listeserveurs.remove(name);
 	}
-
-
+	
+	public static Serveur getByName(String name) {
+		return listeserveurs.get(name);
+	}
 
 	public static void main(String[] args) {
 		

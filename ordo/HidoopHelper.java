@@ -8,7 +8,10 @@ import java.io.ObjectOutputStream;
 import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
-import java.util.*;
+import java.util.HashMap;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
 
 import formats.Format;
 import formats.Format.OpenMode;
@@ -229,7 +232,7 @@ public class HidoopHelper {
 	}
 
 	/**********************************************************************************/
-	public static void createReduceFile(Map<Integer,String> shufflers, String filename) {
+	public static void createReduceFile(Map<Integer, String> shufflers, String filename) {
 
 		/* Creation du fichier cible des shuffles */
 		Format cible = new KVFormat("Shuffled" + filename);
@@ -240,27 +243,35 @@ public class HidoopHelper {
 		List<Socket> sockets = new LinkedList<Socket>();
 		/* Ouverture des connexions avec les shuffle */
 		for (Integer portshuffle : shufflers.keySet()) {
-			String serverName = shufflers.get(portshuffle);
-			String adresse = "//" + InetAddress.getLocalHost().getHostName() + ":"+ config.Project.listeServeurs.get(serverName) + "/" + serverName);
-			Socket s = new Socket(portshuffle,adresse); // Adresse a gerer
-			sockets.add(s);
-			ObjectOutputStream ob = new ObjectOutputStream(s.getOutputStream());
-			oob.add(ob);
-			ObjectInputStream ib = new ObjectInputStream(s.getInputStream());
-			iob.add(ib);
+			try {
+				String serverName = shufflers.get(portshuffle);
+				InetAddress adress = null;
+				Socket s = new Socket(adress, portshuffle); // Adresse a gerer
+				sockets.add(s);
+				ObjectOutputStream ob = new ObjectOutputStream(s.getOutputStream());
+				oob.add(ob);
+				ObjectInputStream ib = new ObjectInputStream(s.getInputStream());
+				iob.add(ib);
+			} catch (Exception e) {
+				e.printStackTrace();
+			}
 		}
 
 		boolean shufflefini = false;
 		while (!shufflefini) {
-			/* Ecriture du kv dans le fichier */
-			for (ObjectInputStream ib : iob) {
-				KV kvactu = (KV) ib.readObject();
-				if (kvactu != null) {
-					cible.write(kvactu);
-					shufflefini = shufflefini && false;
-				} else {
-					shufflefini = shufflefini && true;
+			try {
+				/* Ecriture du kv dans le fichier */
+				for (ObjectInputStream ib : iob) {
+					KV kvactu = (KV) ib.readObject();
+					if (kvactu != null) {
+						cible.write(kvactu);
+						shufflefini = shufflefini && false;
+					} else {
+						shufflefini = shufflefini && true;
+					}
 				}
+			} catch (Exception e) {
+				e.printStackTrace();
 			}
 		}
 
@@ -268,14 +279,18 @@ public class HidoopHelper {
 		cible.close();
 
 		/* Fermeture des sockets */
-		for (ObjectInputStream ib : iob) {
-			ib.close();
-		}
-		for (ObjectOutputStream ob : oob) {
-			ob.close();
-		}
-		for (Socket s : sockets) {
-			s.close();
+		try {
+			for (ObjectInputStream ib : iob) {
+				ib.close();
+			}
+			for (ObjectOutputStream ob : oob) {
+				ob.close();
+			}
+			for (Socket s : sockets) {
+				s.close();
+			}
+		} catch (Exception e) {
+			e.printStackTrace();
 		}
 	}
 
