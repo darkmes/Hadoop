@@ -10,9 +10,9 @@ import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
 import java.rmi.server.UnicastRemoteObject;
 import java.util.List;
+import java.util.Map;
 
 import formats.Format;
-import hdfs.NameNode;
 import map.Mapper;
 import map.Reducer;
 
@@ -39,12 +39,14 @@ public class DaemonImpl extends UnicastRemoteObject implements Daemon {
 	}
 
 	@Override
-	public void runReduce(Reducer m, List<Format> readers, Format writer, CallBack cb) throws RemoteException {
-		for (Format reader : readers) {
-			m.reduce(reader, writer);
-			/* Fermeture du reader */
-			reader.close();
-		}
+	public void runReduce(Reducer m, List<String> shufflers,Format shuffled, Format writer, Map<String,Serveur> servers, CallBack cb) throws RemoteException {
+		/*Réception des shuffles*/
+		System.out.println("Récéption du shuffle ...");
+		HidoopHelper.createReduceFile(shufflers,shuffled,servers);
+		System.out.println("Lancement du reduce ...");
+		m.reduce(shuffled, writer);
+		/* Fermeture du reader */
+		shuffled.close();
 		/* Fermeture du writer */
 		writer.close();
 
@@ -53,8 +55,9 @@ public class DaemonImpl extends UnicastRemoteObject implements Daemon {
 		System.out.println("CallBack envoyé avec succes");
 
 	}
-	
-	public void runShuffle(int port, List<Format> readers,int nbReduce, SortComparator comp) {
+
+	public void runShuffle(int port, List<Format> readers, int nbReduce, SortComparator comp) throws RemoteException {
+		System.out.println("Lancement shuffle ...");
 		HidoopHelper.shuffle(port, readers, nbReduce, comp);
 	}
 
@@ -91,10 +94,10 @@ public class DaemonImpl extends UnicastRemoteObject implements Daemon {
 
 			/* Enregistrement du serveur aupres du registry */
 			Naming.rebind(URL, serveur);
-			
+
 			/* Creer l'instance du serveur pour le registre */
-			Serveur s = new Serveur(args[1],port,port-1000,URL);
-			
+			Serveur s = new Serveur(args[1], port, port - 1000, URL);
+
 			/* Connexion au registre de serveur */
 			InetAddress adrRegistre = InetAddress.getByName(RegistreServeur.Registreadresse);
 
@@ -108,13 +111,10 @@ public class DaemonImpl extends UnicastRemoteObject implements Daemon {
 			/* Envoi du serveur */
 			bw.writeObject(s);
 
-
 			br.close();
 			bw.close();
 			socket.close();
 
-			
-			
 		} catch (Exception exc) {
 			exc.printStackTrace();
 		}

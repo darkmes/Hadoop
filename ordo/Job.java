@@ -116,6 +116,7 @@ public class Job implements JobInterface {
 
 		/* Création de l' Executor service */
 		ExecutorService executeur = Executors.newFixedThreadPool(this.numberOfMaps);
+		ExecutorService execShuffle = Executors.newFixedThreadPool(this.numberOfMaps);
 
 		/*
 		 * Enregistrement du fichier résultat dans le catalogue : Création de
@@ -143,6 +144,10 @@ public class Job implements JobInterface {
 		int nbrBloc = 4; 
 		int nbrServers = 3;
 		// Champ à récupérer sur Inode du fichier, à corriger pour le rendu final
+		
+		/*Récupérer la liste des serveurs*/
+		Map<String,Serveur> serveurs = JobHelper.getServeur();
+		
 		/* Ici création de INoeud Manuelle pour test uniquement */
 		
 		HashMap<String, LinkedList<Integer>> mapnode = HidoopHelper.recInode(this.getInputFname());
@@ -157,27 +162,37 @@ public class Job implements JobInterface {
 		//HdfsClient.HdfsWrite(Type.LINE, nameRes, 1);
 
 		 /* Lancement des maps sur les machines distantes (serveurs) */
-		this.listeCallBacksMap =JobHelper.startMaps(nbrBloc, this.inputFname,colNode,mr,executeur);
+		this.listeCallBacksMap =JobHelper.startMaps(nbrBloc, this.inputFname,colNode,mr,executeur,serveurs);
 		
 
 		/* Attendre que tous les callBacks soient reçus */
 		JobHelper.recCallBack(this.listeCallBacksMap, nbrBloc);
-
 		/* Tous les map ont terminé */
-		/* Appliquer le reduce */
-		this.listeCallBacksReduce =JobHelper.startReduces(nbrBloc, this.inputFname,colNode,mr,executeur);
 		
-		/* Attendre que tous les callBacks soient reçus */
+		/*Création de la liste des reducers*/
+		HashMap<Integer,String> reducers = HidoopHelper.getReducers(this.numberOfReduces);
+		
+		
+		System.out.println("Lancement de shuffle");
+		/*Lancer les shuffles*/
+		List<String> shufflers = JobHelper.startShuffles(this.inputFname, colNode, execShuffle, this.numberOfReduces, reducers,serveurs);
+		/* Appliquer le reduce */
+		System.out.println("Lancement de reduce");
+		List<String> reducersList = new LinkedList<String>();
+		reducersList.addAll(reducers.values());
+		this.listeCallBacksReduce =JobHelper.startReduces(nbrBloc, this.inputFname,reducersList,shufflers,mr,executeur,serveurs);
+		
+	/* Attendre que tous les callBacks soient reçus */
 		JobHelper.recCallBack(this.listeCallBacksReduce, nbrServers);
 		
-		/*HdfsClient.HdfsRead(nameRes, "resultatFusionMap.txt");
+	/*HdfsClient.HdfsRead(nameRes, "resultatFusionMap.txt");
 		System.out.println("Fusion des résultats des map effectuée avec succès ...");*/
 
 		
 		
-		//System.out.println("Reduce effectué avec succès ..");
+		System.out.println("Reduce effectué avec succès ..");
 
-		//System.out.println("Création du fichier résultat " + nameRes);
+		System.out.println("Création du fichier résultat " + nameRes);
 	}
 
 }

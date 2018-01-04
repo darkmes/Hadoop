@@ -42,6 +42,7 @@ public class MyMapReduce implements MapReduce {
 	
 	public static void main(String args[]) {
 		Job j = new Job();
+		j.setNumberOfReduces(2);
         j.setInputFormat(Format.Type.LINE);
         j.setInputFname(args[0]);
        long t1 = System.currentTimeMillis();

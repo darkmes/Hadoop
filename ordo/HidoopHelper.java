@@ -8,9 +8,12 @@ import java.io.ObjectOutputStream;
 import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.util.Collection;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.ListIterator;
 import java.util.Map;
 
 import formats.Format;
@@ -168,8 +171,10 @@ public class HidoopHelper {
 			List<ObjectInputStream> iob = new LinkedList<ObjectInputStream>();
 			List<Socket> sockets = new LinkedList<Socket>();
 			/* Ouverture des sockets de communications */
-			for (int i = 0; i < nbReduce; i++) {
+			for (int i = 1; i <= nbReduce; i++) {
+				System.out.println("Lancement du serveur shuffle");
 				Socket s = ss.accept();
+				System.out.println("Connexion reducer reçue");
 				sockets.add(s);
 				ObjectOutputStream ob = new ObjectOutputStream(s.getOutputStream());
 				writer.put(i, ob);
@@ -202,9 +207,9 @@ public class HidoopHelper {
 			SortComparator comp) {
 		/* KV courant dans le fichier des résultats du Map */
 		KV kv;
-		f.open(Format.OpenMode.R);
 
 		kv = f.read();
+		KV kvnull = new KV("null", "null");
 		/* tant qu'il existe encore des Key-Value */
 		while (kv != null) {
 
@@ -212,41 +217,54 @@ public class HidoopHelper {
 			int writeto = comp.compare(kv.k, null);
 
 			/* Ecrire le resultat dans le bon writer */
-			for (int i = 0; i < nbReduce; i++) {
+			for (int i = 1; i <= nbReduce; i++) {
 				ObjectOutputStream ob = writer.get(i);
 				try {
-					if (i + 1 == writeto) {
+					if (i == writeto) {
 						ob.writeObject(kv);
 					} else {
-						ob.writeObject(null);
+						ob.writeObject(kvnull);
 					}
-					kv = f.read();
 				} catch (Exception e) {
 					e.printStackTrace();
 				}
 			}
-
-			/* Fermeture du fichier */
-			f.close();
+			kv = f.read();
+			/*
+			 * Ecriture une derniere fois de null pour indiquer la fin du
+			 * shuffle
+			 */
 		}
+		System.out.println("Ecriture des kv du fichier finie");
+		for (int i = 1; i <= nbReduce; i++) {
+			ObjectOutputStream ob = writer.get(i);
+			try {
+
+				ob.writeObject(kvnull);
+			} catch (Exception e) {
+				e.printStackTrace();
+			}
+		}
+
+		/* Fermeture du fichier */
+		System.out.println("Couscous");
+		f.close();
 	}
 
 	/**********************************************************************************/
-	public static void createReduceFile(Map<Integer, String> shufflers, String filename) {
+	public static void createReduceFile(List<String> shufflers, Format cible, Map<String, Serveur> servers) {
 
-		/* Creation du fichier cible des shuffles */
-		Format cible = new KVFormat("Shuffled" + filename);
 		cible.open(OpenMode.W);
 		/* Création des collections des sockets */
 		List<ObjectOutputStream> oob = new LinkedList<ObjectOutputStream>();
 		List<ObjectInputStream> iob = new LinkedList<ObjectInputStream>();
 		List<Socket> sockets = new LinkedList<Socket>();
 		/* Ouverture des connexions avec les shuffle */
-		for (Integer portshuffle : shufflers.keySet()) {
+		for (String shuffler : shufflers) {
 			try {
-				String serverName = shufflers.get(portshuffle);
-				InetAddress adress = null;
-				Socket s = new Socket(adress, portshuffle); // Adresse a gerer
+				Serveur serv = servers.get(shuffler);
+				InetAddress adress = InetAddress.getByName(serv.getAdresseIp());
+				Socket s = new Socket(adress, serv.getPortTcp());
 				sockets.add(s);
 				ObjectOutputStream ob = new ObjectOutputStream(s.getOutputStream());
 				oob.add(ob);
@@ -256,23 +274,39 @@ public class HidoopHelper {
 				e.printStackTrace();
 			}
 		}
+		boolean [] recu = new boolean[shufflers.size()];
+		/*Initialisation des booleans*/
+		for (int i=0; i<shufflers.size(); i++) {
+			recu[i] = false;
+		}
 
 		boolean shufflefini = false;
-		while (!shufflefini) {
-			try {
+		try {
+			while (!shufflefini) {
+				int i = 0;
 				/* Ecriture du kv dans le fichier */
 				for (ObjectInputStream ib : iob) {
 					KV kvactu = (KV) ib.readObject();
-					if (kvactu != null) {
+					if (!kvactu.k.equals("null")) {
 						cible.write(kvactu);
-						shufflefini = shufflefini && false;
+						recu[i] = true;
 					} else {
-						shufflefini = shufflefini && true;
+						recu[i] = false;
 					}
+					i++;
 				}
-			} catch (Exception e) {
-				e.printStackTrace();
+				
+				/*Mise a jour de shuflle fini*/
+				boolean existereception = false;
+				for (int k=0; k<shufflers.size(); k++) {
+					existereception = existereception || recu[k];
+				}
+				shufflefini = !existereception;
+				
 			}
+			System.out.println(shufflefini);
+		} catch (Exception e) {
+			e.printStackTrace();
 		}
 
 		/* Fermeture du fichier */
@@ -292,6 +326,15 @@ public class HidoopHelper {
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
+	}
+
+	/**********************************************************************************/
+	public static HashMap<Integer, String> getReducers(int nbReduce) {
+		// pour cette version uniquement(valeur de test)
+		HashMap<Integer, String> res = new HashMap<Integer, String>();
+		res.put(1, "serveur1");
+		res.put(2, "serveur2");
+		return res;
 	}
 
 	/**********************************************************************************/

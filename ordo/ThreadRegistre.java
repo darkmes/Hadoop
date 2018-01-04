@@ -16,15 +16,10 @@ public class ThreadRegistre extends Thread {
 				ObjectInputStream ois = new ObjectInputStream(s.getInputStream());
 				ObjectOutputStream oos = new ObjectOutputStream(s.getOutputStream());
 				Serveur serv = (Serveur) ois.readObject();
-				RegistreServeur.ajouterServeur(serv);
+				RegistreServeur.listeserveurs.put(serv.getNomserveur(),serv);
 				oos.close();
 				ois.close();
 				s.close();
-				for (String serveurname : RegistreServeur.getListeserveurs().keySet()) {
-					System.out.println(serveurname);
-
-				}
-
 			}
 		} catch (Exception e) {
 			e.printStackTrace();
