@@ -31,7 +31,7 @@ public class ListenerRegistre extends Thread {
 				System.out.println("nombre de serveurs fonctionnels: " + RegistreServeur.getListeserveurs().size());
 				}
 				catch (SocketTimeoutException | EOFException e) {
-					System.out.println("machine non fonctionnelle " + (portListener));
+					System.out.println("serveur en panne " +RegistreServeur.getNameByPortTcp(portListener-2000));
 					
 					synchronized(RegistreServeur.getListeserveurs()){
 						
