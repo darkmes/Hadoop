@@ -16,10 +16,21 @@ public class ThreadRegistre extends Thread {
 				ObjectInputStream ois = new ObjectInputStream(s.getInputStream());
 				ObjectOutputStream oos = new ObjectOutputStream(s.getOutputStream());
 				Serveur serv = (Serveur) ois.readObject();
-				RegistreServeur.listeserveurs.put(serv.getNomserveur(),serv);
+				RegistreServeur.ajouterServeur(serv);
+				// Thread d'écoute heartbeat
+				Thread listener = new ListenerRegistre(serv.getPortTcp() + 2000);
+				listener.start();
+				oos.writeObject("Serveur reçu");
+
 				oos.close();
 				ois.close();
 				s.close();
+				System.out.println("La liste des serveurs:");
+				for (String serveurname : RegistreServeur.getListeserveurs().keySet()) {
+					System.out.println("Le serveur " + serveurname);
+
+				}
+
 			}
 		} catch (Exception e) {
 			e.printStackTrace();

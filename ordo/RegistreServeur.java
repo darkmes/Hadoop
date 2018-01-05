@@ -9,7 +9,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 public class RegistreServeur {
-	public static Map<String, Serveur> listeserveurs = new HashMap<String, Serveur>();
+	private static Map<String, Serveur> listeserveurs = new HashMap<String, Serveur>();
 	public static String Registreadresse;
 	public static final int portEcoute = 7000;
 	public static final int portJob = 8000;
@@ -21,7 +21,23 @@ public class RegistreServeur {
 	public static void retirerServeur(String name) {
 		listeserveurs.remove(name);
 	}
+	
+	public static Map<String, Serveur> getListeserveurs() {
+		return listeserveurs;
+	}
+	
+	public static String getNameByPortTcp(int portT) {
+		String res = null;
+		for (String serveurname : RegistreServeur.getListeserveurs().keySet()) {
+			if (listeserveurs.get(serveurname).getPortTcp() == portT) {
+				res = serveurname;
+				break;
+			}
 
+		}
+		return res;
+
+	}
 
 	public static void main(String[] args) {
 
@@ -30,16 +46,13 @@ public class RegistreServeur {
 			InetAddress adresse = InetAddress.getLocalHost();
 			RegistreServeur.Registreadresse = adresse.getHostAddress();
 			System.out.println("Adresse récupérée");
-			
+
 		} catch (UnknownHostException e) {
 			e.printStackTrace();
 		}
-		
+
 		Thread t = new ThreadRegistre();
 		t.start();
-		for (String name : listeserveurs.keySet()) {
-			System.out.println(listeserveurs.get(name).getAdresseIp());
-		}
 		Thread tjob = new ThreadRegistreJob();
 		tjob.start();
 	}

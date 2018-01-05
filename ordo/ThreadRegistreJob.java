@@ -15,7 +15,7 @@ public class ThreadRegistreJob extends Thread {
 			Socket s = ss.accept();
 			ObjectOutputStream oos = new ObjectOutputStream(s.getOutputStream());
 			ObjectInputStream ois = new ObjectInputStream(s.getInputStream());
-			oos.writeObject(RegistreServeur.listeserveurs);
+			oos.writeObject(RegistreServeur.getListeserveurs());
 			oos.close();
 			ois.close();
 			s.close();

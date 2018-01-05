@@ -125,10 +125,10 @@ public class Job implements JobInterface {
 		 */
 
 		/* Nom du fichier résultat */
-		String nameRes = this.getInputFname() + "-res";
+		/*String nameRes = this.getInputFname() + "-res";*/
 
 		/* Création du fichier sur la machine locale */
-		File fichierResultat = new File(nameRes);
+		/*File fichierResultat = new File(nameRes);
 		try {
 			if (fichierResultat.createNewFile()) {
 				System.out.println("Fichier résultat a été crée");
@@ -137,7 +137,7 @@ public class Job implements JobInterface {
 			}
 		} catch (IOException e1) {
 			e1.printStackTrace();
-		}
+		}*/
 
 		/* Récupération du Inoeud du fichier nécessaire */
 		/***********************************************************************************************************/
@@ -183,7 +183,7 @@ public class Job implements JobInterface {
 		this.listeCallBacksReduce =JobHelper.startReduces(nbrBloc, this.inputFname,reducersList,shufflers,mr,executeur,serveurs);
 		
 	/* Attendre que tous les callBacks soient reçus */
-		JobHelper.recCallBack(this.listeCallBacksReduce, nbrServers);
+		JobHelper.recCallBack(this.listeCallBacksReduce, this.numberOfReduces);
 		
 	/*HdfsClient.HdfsRead(nameRes, "resultatFusionMap.txt");
 		System.out.println("Fusion des résultats des map effectuée avec succès ...");*/

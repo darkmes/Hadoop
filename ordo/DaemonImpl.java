@@ -110,7 +110,15 @@ public class DaemonImpl extends UnicastRemoteObject implements Daemon {
 
 			/* Envoi du serveur */
 			bw.writeObject(s);
-
+			
+			/*Confirmation de réception du serveur */
+			String msgg = (String) br.readObject();
+			
+			/* Lancement du Thread d'émission HeartBeat */
+			//Thread.sleep(3000);
+			Thread emetteur = new EmetteurDaemon(port+1000);
+			emetteur.start();
+			
 			br.close();
 			bw.close();
 			socket.close();

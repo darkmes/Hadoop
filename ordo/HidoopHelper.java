@@ -163,6 +163,8 @@ public class HidoopHelper {
 
 	public static void shuffle(int port, List<Format> readers, int nbReduce, SortComparator comp) {
 		try {
+			/*Creation du kv indiquant la fin du shuffle*/
+			KV kvfin = new KV("fini","fini");
 			/* Création du serveur socket */
 			ServerSocket ss = new ServerSocket(port);
 
@@ -186,7 +188,10 @@ public class HidoopHelper {
 			for (Format f : readers) {
 				shuffleFile(f, writer, nbReduce, comp);
 			}
-
+			/*Indiquer au reducers que le shuffle est fini*/
+			for (ObjectOutputStream ob : writer.values()) {
+				ob.writeObject(kvfin);
+			}
 			/* Fermeture des sockets */
 			for (ObjectInputStream ib : iob) {
 				ib.close();
@@ -236,18 +241,8 @@ public class HidoopHelper {
 			 */
 		}
 		System.out.println("Ecriture des kv du fichier finie");
-		for (int i = 1; i <= nbReduce; i++) {
-			ObjectOutputStream ob = writer.get(i);
-			try {
-
-				ob.writeObject(kvnull);
-			} catch (Exception e) {
-				e.printStackTrace();
-			}
-		}
 
 		/* Fermeture du fichier */
-		System.out.println("Couscous");
 		f.close();
 	}
 
@@ -274,37 +269,28 @@ public class HidoopHelper {
 				e.printStackTrace();
 			}
 		}
-		boolean [] recu = new boolean[shufflers.size()];
-		/*Initialisation des booleans*/
-		for (int i=0; i<shufflers.size(); i++) {
-			recu[i] = false;
-		}
+		
+		/*Création de la liste d'écoute*/
+		List<ObjectInputStream> ecoute = new LinkedList<ObjectInputStream>();
+		ecoute.addAll(iob);
 
-		boolean shufflefini = false;
 		try {
-			while (!shufflefini) {
-				int i = 0;
+			while (ecoute.size() != 0) {
 				/* Ecriture du kv dans le fichier */
-				for (ObjectInputStream ib : iob) {
+				for (ObjectInputStream ib : ecoute) {
 					KV kvactu = (KV) ib.readObject();
 					if (!kvactu.k.equals("null")) {
+						if (!kvactu.k.equals("fini")) {
 						cible.write(kvactu);
-						recu[i] = true;
-					} else {
-						recu[i] = false;
+						} else {
+							/*Si un shuffle a fini on le retire de la liste d'écoute*/
+							ecoute.remove(ib);
+						}
 					}
-					i++;
+
 				}
-				
-				/*Mise a jour de shuflle fini*/
-				boolean existereception = false;
-				for (int k=0; k<shufflers.size(); k++) {
-					existereception = existereception || recu[k];
-				}
-				shufflefini = !existereception;
 				
 			}
-			System.out.println(shufflefini);
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
