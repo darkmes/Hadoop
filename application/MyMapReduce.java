@@ -6,6 +6,7 @@ import java.util.StringTokenizer;
 
 import map.MapReduce;
 import ordo.Job;
+import ordo.SortComparator;
 import formats.Format;
 import formats.FormatReader;
 import formats.FormatWriter;
@@ -45,6 +46,8 @@ public class MyMapReduce implements MapReduce {
 		j.setNumberOfReduces(2);
         j.setInputFormat(Format.Type.LINE);
         j.setInputFname(args[0]);
+        SortComparator comp = new Comparator(j.getNumberOfReduces());
+        j.setSortComparator(comp);
        long t1 = System.currentTimeMillis();
 		j.startJob(new MyMapReduce());
 		long t2 = System.currentTimeMillis();

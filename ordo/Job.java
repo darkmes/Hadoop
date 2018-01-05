@@ -175,7 +175,7 @@ public class Job implements JobInterface {
 		
 		System.out.println("Lancement de shuffle");
 		/*Lancer les shuffles*/
-		List<String> shufflers = JobHelper.startShuffles(this.inputFname, colNode, execShuffle, this.numberOfReduces, reducers,serveurs);
+		List<String> shufflers = JobHelper.startShuffles(this.inputFname, colNode, execShuffle, this.numberOfReduces, reducers,serveurs,this.getSortComparator());
 		/* Appliquer le reduce */
 		System.out.println("Lancement de reduce");
 		List<String> reducersList = new LinkedList<String>();
@@ -192,7 +192,7 @@ public class Job implements JobInterface {
 		
 		System.out.println("Reduce effectué avec succès ..");
 
-		System.out.println("Création du fichier résultat " + nameRes);
+		//System.out.println("Création du fichier résultat " + nameRes);
 	}
 
 }

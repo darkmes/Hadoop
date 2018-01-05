@@ -8,12 +8,9 @@ import java.io.ObjectOutputStream;
 import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
-import java.util.Collection;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.ListIterator;
 import java.util.Map;
 
 import formats.Format;
@@ -25,60 +22,6 @@ import formats.KVFormat;
  * Classe contenant des méthodes statiques utiles
  */
 public class HidoopHelper {
-
-	/**
-	 * Effectue le shuffle sur un fichier passé en paramètres
-	 * 
-	 * @param f
-	 *            : le fichier source
-	 */
-	public static void shuffleTest(Format f) {
-		// Collection<Format> formats;
-		/* KV courant dans le fichier des résultats du Map */
-		KV kv;
-		f.open(Format.OpenMode.R);
-		/*
-		 * Table où on range les mots clés déjà parcouru et le fichier contenant
-		 * ses résultats.
-		 */
-		Map<String, Format> listeKeysVisites = new HashMap<String, Format>();
-
-		kv = f.read();
-		/* tant qu'il existe encore des Key-Value */
-		while (kv != null) {
-			/* Si cette clé est déjà visitée */
-			if (listeKeysVisites.containsKey(kv.k)) {
-
-				/*
-				 * on rajoute le Key-value dans le fichier déjà contenant les
-				 * résultats de cette clé.
-				 */
-				listeKeysVisites.get(kv.k).write(kv);
-				System.out.println(listeKeysVisites.get(kv.k).getFname());
-
-			} else {
-				/* On crée un nouveau fichier préfixé avec la clé. */
-				KVFormat formatK = new KVFormat(kv.k + "_" + f.getFname());
-				formatK.open(Format.OpenMode.W);
-				/* On y ajoute la Key-value. */
-				formatK.write(kv);
-
-				/*
-				 * on rajoute le fichier et la clé à la Map pour la sauvegarde
-				 * des données visitées.
-				 */
-				listeKeysVisites.put(kv.k, formatK);
-
-			}
-
-			kv = f.read();
-
-		}
-		for (Format fo : listeKeysVisites.values()) {
-			fo.close();
-		}
-		f.close();
-	}
 
 	/**************************************************************************************/
 	/*
@@ -161,10 +104,16 @@ public class HidoopHelper {
 
 	/**********************************************************************************/
 
+	/** Effectuer le shuffle sur tous les fichiers mappés
+	 * @param port : le port du serveur qui lance le shuffle
+	 * @param readers : la liste des fichiers mappés
+	 * @param nbReduce : le nombre de Reduce
+	 * @param comp : Le comparateur pour determiner la cible
+	 */
 	public static void shuffle(int port, List<Format> readers, int nbReduce, SortComparator comp) {
 		try {
-			/*Creation du kv indiquant la fin du shuffle*/
-			KV kvfin = new KV("fini","fini");
+			/* Creation du kv indiquant la fin du shuffle */
+			KV kvfin = new KV("fini", "fini");
 			/* Création du serveur socket */
 			ServerSocket ss = new ServerSocket(port);
 
@@ -188,7 +137,7 @@ public class HidoopHelper {
 			for (Format f : readers) {
 				shuffleFile(f, writer, nbReduce, comp);
 			}
-			/*Indiquer au reducers que le shuffle est fini*/
+			/* Indiquer au reducers que le shuffle est fini */
 			for (ObjectOutputStream ob : writer.values()) {
 				ob.writeObject(kvfin);
 			}
@@ -208,6 +157,12 @@ public class HidoopHelper {
 		}
 	}
 
+	/** Effectuer le shuffle à partir d'un seul fichier source
+	 * @param f : le fichier source
+	 * @param writer : la liste des canaux où les données sont envoyés
+	 * @param nbReduce : le nombre de reduce
+	 * @param comp : Le comparateur pour determiner la cible
+	 */
 	public static void shuffleFile(Format f, Map<Integer, ObjectOutputStream> writer, int nbReduce,
 			SortComparator comp) {
 		/* KV courant dans le fichier des résultats du Map */
@@ -247,6 +202,11 @@ public class HidoopHelper {
 	}
 
 	/**********************************************************************************/
+	/** Methode qui reçoit les données envoyés par les shuffles et les enregistre pour préparer le reduce
+	 * @param shufflers : la liste des serveurs shuffle
+	 * @param cible : le fichier où les données seront écrites
+	 * @param servers : la liste des serveurs disponibles
+	 */
 	public static void createReduceFile(List<String> shufflers, Format cible, Map<String, Serveur> servers) {
 
 		cible.open(OpenMode.W);
@@ -269,8 +229,8 @@ public class HidoopHelper {
 				e.printStackTrace();
 			}
 		}
-		
-		/*Création de la liste d'écoute*/
+
+		/* Création de la liste d'écoute */
 		List<ObjectInputStream> ecoute = new LinkedList<ObjectInputStream>();
 		ecoute.addAll(iob);
 
@@ -281,15 +241,18 @@ public class HidoopHelper {
 					KV kvactu = (KV) ib.readObject();
 					if (!kvactu.k.equals("null")) {
 						if (!kvactu.k.equals("fini")) {
-						cible.write(kvactu);
+							cible.write(kvactu);
 						} else {
-							/*Si un shuffle a fini on le retire de la liste d'écoute*/
+							/*
+							 * Si un shuffle a fini on le retire de la liste
+							 * d'écoute
+							 */
 							ecoute.remove(ib);
 						}
 					}
 
 				}
-				
+
 			}
 		} catch (Exception e) {
 			e.printStackTrace();
@@ -312,9 +275,14 @@ public class HidoopHelper {
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
+		cible.close();
 	}
 
 	/**********************************************************************************/
+	/** Renvoie la liste des serveurs qui s'occupera de lancer les serveurs
+	 * @param nbReduce : nombre de reduce a lancer
+	 * @return liste de serveur
+	 */
 	public static HashMap<Integer, String> getReducers(int nbReduce) {
 		// pour cette version uniquement(valeur de test)
 		HashMap<Integer, String> res = new HashMap<Integer, String>();
@@ -323,24 +291,5 @@ public class HidoopHelper {
 		return res;
 	}
 
-	/**********************************************************************************/
-	// Methodes uniquement pour tester
-	public static void main(String[] args) {
-		Format f = new KVFormat(args[0]);
-		HidoopHelper.shuffleTest(f);
-		// HidoopHelper.testerEquiCharge();
-
-	}
-
-	public static void testerEquiCharge() {
-		HashMap<String, LinkedList<Integer>> res = HidoopHelper.locNode(HidoopHelper.recInode(null), 4);
-		for (String ser : res.keySet()) {
-			System.out.print(ser + " : ");
-			for (Integer i : res.get(ser)) {
-				System.out.print(i + " ");
-			}
-			System.out.print("\n");
-		}
-	}
 	/**********************************************************************************/
 }

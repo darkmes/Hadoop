@@ -18,36 +18,47 @@ import formats.LineFormat;
 import map.MapReduce;
 
 public class JobHelper {
-	
-	
-	public static Map<String,Serveur> getServeur() {
-		Map<String,Serveur> res = new HashMap<String,Serveur>();
+
+	/**
+	 * Récupère la liste des serveurs auprès du registre des serveurs
+	 * 
+	 * @return liste des serveurs
+	 */
+	public static Map<String, Serveur> getServeur() {
+		Map<String, Serveur> res = new HashMap<String, Serveur>();
 		try {
-		Socket s = new Socket(InetAddress.getByName(RegistreServeur.Registreadresse),RegistreServeur.portJob);
-		ObjectInputStream ois = new ObjectInputStream(s.getInputStream());
-		ObjectOutputStream oos = new ObjectOutputStream(s.getOutputStream());
-		res = (Map<String,Serveur>) ois.readObject();
-		
-		ois.close();
-		oos.close();
-		s.close();
+			Socket s = new Socket(InetAddress.getByName(RegistreServeur.Registreadresse), RegistreServeur.portJob);
+			ObjectInputStream ois = new ObjectInputStream(s.getInputStream());
+			ObjectOutputStream oos = new ObjectOutputStream(s.getOutputStream());
+			res = (Map<String, Serveur>) ois.readObject();
+
+			ois.close();
+			oos.close();
+			s.close();
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
 		return res;
-		
+
 	}
 
 	/**
+	 * Methode qui lance les maps sur les différents serveurs
+	 * 
 	 * @param nbrBloc
+	 *            : le nombre de bloc auquel le fichier est divisé
 	 * @param inputFname
+	 *            : le nom du fichier d'entrée
 	 * @param colNode
+	 *            : les serveurs où les blocs ont été colocalisés
 	 * @param mr
+	 *            : le map reduceur
 	 * @param executeur
-	 * @return
+	 *            : l'executeur de thread
+	 * @return la liste des callBack à attendre
 	 */
 	public static List<CallBack> startMaps(int nbrBloc, String inputFname, HashMap<String, LinkedList<Integer>> colNode,
-			MapReduce mr, ExecutorService executeur,Map<String,Serveur> servers ) {
+			MapReduce mr, ExecutorService executeur, Map<String, Serveur> servers) {
 		List<CallBack> res = new LinkedList<CallBack>();
 		int i = 0;
 		try {
@@ -95,18 +106,27 @@ public class JobHelper {
 		return res;
 	}
 
-
 	/**
+	 * Methodes qui lance les reduces sur les differents serveurs
+	 * 
 	 * @param nbrBloc
+	 *            : le nombre de bloc auquel le fichier est divisé
 	 * @param inputFname
+	 *            : le nom du fichier d'entrée
 	 * @param reducers
+	 *            : la liste des serveurs qui seront chargés d'effectuer les
+	 *            reduces
 	 * @param shufflers
+	 *            : la liste des serveurs qui seront chargés d'effectuer les
+	 *            shuffles
 	 * @param mr
+	 *            : le map reduceur
 	 * @param executeur
-	 * @return
+	 *            : l'executeur de thread
+	 * @return la liste des callBack à attendre
 	 */
 	public static List<CallBack> startReduces(int nbrBloc, String inputFname, List<String> reducers,
-			List<String> shufflers, MapReduce mr, ExecutorService executeur, Map<String,Serveur> servers) {
+			List<String> shufflers, MapReduce mr, ExecutorService executeur, Map<String, Serveur> servers) {
 		List<CallBack> res = new LinkedList<CallBack>();
 		try {
 
@@ -131,7 +151,8 @@ public class JobHelper {
 				res.add(cb);
 
 				/* On lance les threads pour les serveurs distants */
-				executeur.execute(new ThreadReduce(serveurcourant, shufflers, writerShuffle, writerReduce, cb, mr,servers));
+				executeur.execute(
+						new ThreadReduce(serveurcourant, shufflers, writerShuffle, writerReduce, cb, mr, servers));
 				/* Un map a été lancé, on incrémente le compteur */
 
 			}
@@ -142,15 +163,23 @@ public class JobHelper {
 	}
 
 	/**
+	 * Methode qui lance les shuffles sur les différents serveurs
+	 * 
 	 * @param inputFname
+	 *            : le nom du fichier d'entrée
 	 * @param colNode
+	 *            : les serveurs où les blocs ont été colocalisés
 	 * @param executeur
+	 *            : l'executeur de thread
 	 * @param nbReduce
+	 *            : le nombre de reduce à lancer
 	 * @param reducers
+	 *            : la liste des serveurs chargés de lancer les reduce
 	 * @return
 	 */
 	public static List<String> startShuffles(String inputFname, HashMap<String, LinkedList<Integer>> colNode,
-			ExecutorService executeur, int nbReduce, HashMap<Integer, String> reducers , Map<String,Serveur> servers) {
+			ExecutorService executeur, int nbReduce, HashMap<Integer, String> reducers, Map<String, Serveur> servers,
+			SortComparator comp) {
 		List<String> shufflers = new LinkedList<String>();
 		for (String servername : colNode.keySet()) {
 			shufflers.add(servername);
@@ -164,7 +193,7 @@ public class JobHelper {
 			Serveur servc = servers.get(servername);
 			try {
 				Daemon serveurcourant = (Daemon) Naming.lookup(servc.getURL());
-				executeur.execute(new ThreadShuffle(nbReduce, servc.getPortTcp(), serveurcourant, readers));
+				executeur.execute(new ThreadShuffle(nbReduce, servc.getPortTcp(), serveurcourant, readers, comp));
 			} catch (Exception e) {
 				e.printStackTrace();
 			}
@@ -175,6 +204,8 @@ public class JobHelper {
 	}
 
 	/**
+	 * Méthode pour gerer la barriere d'attente sur les call back
+	 * 
 	 * @param listeCallBack
 	 * @param nbCallBack
 	 */

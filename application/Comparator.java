@@ -1,6 +1,8 @@
-package ordo;
+package application;
 
 import java.io.Serializable;
+
+import ordo.SortComparator;
 
 public class Comparator implements SortComparator, Serializable {
 	int nbReduce;
@@ -18,15 +20,20 @@ public class Comparator implements SortComparator, Serializable {
 		int codeAscii = ((int) c);
 		int value = codeAscii - 96;
 		int result = 0;
-
-		for (int i = 1; i <= this.nbReduce; i++) {
-			if ((value < seuil * i) && (value >= seuil * (i - 1))) {
+		int i = 1;
+		boolean ValeurTrouvee = false;
+		while ((i <= this.nbReduce) && (!ValeurTrouvee)) {
+			if ((value < seuil * (i)) && (value >= seuil * (i - 1))) {
 				result = i;
-			} else {
-				result = this.nbReduce;
-			}
+				ValeurTrouvee = true;
+			} 
+			i++;
 		}
+		
+		if (!ValeurTrouvee) {
+			result = this.nbReduce;
+		}
+			
 		return result;
 	}
-
 }
