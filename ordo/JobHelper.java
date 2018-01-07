@@ -42,6 +42,17 @@ public class JobHelper {
 
 	}
 
+	/** Vérifier l'état actuel des serveur pour pouvoir continuer l'éxécution
+	 * @param servactu : la liste des noms de serveurs utilisés.
+	 */
+	public static void verifierExecution(List<String> servactu) {
+		Map<String, Serveur> listeajour = JobHelper.getServeur();
+		if (!listeajour.keySet().containsAll(servactu)) {
+			System.out.println("Execution arrêtée : nombre de serveur insuffisant.");
+			System.exit(0);
+		}
+	}
+
 	/**
 	 * Methode qui lance les maps sur les différents serveurs
 	 * 
