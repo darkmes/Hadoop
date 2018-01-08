@@ -1,15 +1,24 @@
 package hdfs;
 
+import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.net.InetAddress;
 import java.net.Socket;
+import java.net.SocketException;
+import java.net.UnknownHostException;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
+import config.Project;
 import formats.AbsFormat;
 import formats.FileHelper;
 import formats.Format;
 import formats.KVFormat;
 import formats.LineFormat;
+import javafx.util.Pair;
 
 public class HdfsHelper {
 	/**
@@ -28,8 +37,10 @@ public class HdfsHelper {
 	 * @return : Inode : noeud du fichier
 	 */
 
-	public static INode getInode(String cmd, String filename) {
+	public static Pair<INode,Map<Integer, String>> getInode(String cmd, String filename, int repFactor, int nbBlocs) {
 		INode node = null;
+		Map<Integer, String> listemachineFonctionnelles = null;
+		Pair<INode, Map<Integer, String>>  p = null;
 		try {
 			/* Récupération de l'adresse du NameNode */
 			InetAddress adrNameNode = InetAddress.getByName(NameNode.NameNodeadresse);
@@ -41,16 +52,18 @@ public class HdfsHelper {
 			ObjectOutputStream bw = new ObjectOutputStream(s.getOutputStream());
 			ObjectInputStream ois = new ObjectInputStream(s.getInputStream());
 			/* Envoi de la commande */
-			bw.writeObject(cmd + '@' + filename);
+			bw.writeObject(cmd + '@' + filename + '@' + repFactor + '@' + nbBlocs);
 			/* Récupération du noeud envoyé */
 			node = (INode) ois.readObject();
+			listemachineFonctionnelles = (Map<Integer, String>) ois.readObject();
+			p = new Pair(node, listemachineFonctionnelles);
 			bw.close();
 			ois.close();
 			s.close();
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
-		return node;
+		return p;
 	}
 
 	/**
@@ -62,8 +75,11 @@ public class HdfsHelper {
 	 * @return : String[] ( tableau de adresseDataNode +'@' + portDataNode
 	 */
 
-	public static String[] getDataNode(String cmd, String filename) {
-		String[] listemachine = new String[3];
+	public static List<ArrayList<String>> getDataNode(String cmd, String filename, int repFactor, int nbBlocs) {
+
+		
+		List<ArrayList<String>> listeBlocsMachines = new ArrayList<>();
+		ArrayList<String> listeMachines = new ArrayList<String>();
 		try {
 			/* Récupération de l'adresse du NameNode */
 			InetAddress adrNameNode = InetAddress.getByName(NameNode.NameNodeadresse);
@@ -75,10 +91,13 @@ public class HdfsHelper {
 			ObjectOutputStream bw = new ObjectOutputStream(s.getOutputStream());
 			ObjectInputStream br = new ObjectInputStream(s.getInputStream());
 			/* Envoi de la commande */
-			bw.writeObject(cmd + "@" + filename);
+			bw.writeObject(cmd + "@" + filename + "@" + repFactor + "@" + nbBlocs);
+			
+			
 			/* Lecture des données et créations du tableau de DataNode */
-			for (int i = 0; i <= 2; i++) {
-				listemachine[i] = (String) br.readObject();
+			for (int i = 1; i <= nbBlocs; i++) {
+				listeMachines = (ArrayList<String>) br.readObject();
+				listeBlocsMachines.add(listeMachines);
 			}
 			bw.close();
 			br.close();
@@ -86,7 +105,7 @@ public class HdfsHelper {
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
-		return listemachine;
+		return listeBlocsMachines;
 	}
 
 	/**
@@ -110,6 +129,8 @@ public class HdfsHelper {
 			 * et d'écriture.
 			 */
 			Socket s = new Socket(adrNode, port);
+			
+			
 			ObjectOutputStream bw = new ObjectOutputStream(s.getOutputStream());
 			ObjectInputStream ois = new ObjectInputStream(s.getInputStream());
 			/* Envoi de la commande */
@@ -133,9 +154,12 @@ public class HdfsHelper {
 			ois.close();
 			bw.close();
 			s.close();
-		} catch (Exception e) {
+			
+		} 
+		catch (IOException | ClassNotFoundException e) {
 			e.printStackTrace();
 		}
+		
 		return f;
 	}
 
@@ -192,6 +216,7 @@ public class HdfsHelper {
 			 * Connexion avec le DataNode et récupération des objets de lecture
 			 * et d'écriture.
 			 */
+			
 			Socket s = new Socket(adrNode, port);
 			ObjectOutputStream oos = new ObjectOutputStream(s.getOutputStream());
 			ObjectInputStream ois = new ObjectInputStream(s.getInputStream());

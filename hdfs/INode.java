@@ -1,6 +1,7 @@
 package hdfs;
 import java.io.Serializable;
-import java.util.HashMap;
+import java.util.ArrayList;
+
 import java.util.Map;
 
 
@@ -10,11 +11,13 @@ public class INode implements Serializable {
 	
 	private String filename;
 	private int version;
-	/*private int taillefichier;*/
-	/*private int taillebloc;*/
-	private Map<Integer,String> mapNode;
+
 	
-	public INode(String filename, Map<Integer,String> mapNode ) {
+	
+	/* bloc/listes machines */
+	private Map<Integer,ArrayList<String>> mapNode;
+	
+	public INode(String filename, Map<Integer,ArrayList<String>> mapNode ) {
 		this.filename = filename;
 		this.version = 1;
 		this.mapNode = mapNode;
@@ -32,7 +35,7 @@ public class INode implements Serializable {
 		return version;
 	}
 
-	public Map<Integer, String> getMapNode() {
+	public Map<Integer, ArrayList<String>> getMapNode() {
 		return mapNode;
 	}
 	

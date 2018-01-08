@@ -1,23 +1,43 @@
 package hdfs;
 
+import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.UnknownHostException;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
+
+
+
 
 public class NameNode {
 
 	public static final int portNameNodeClient = 4500;
 	public static final int portNameNodeData = 4501;
-	
-	public static final int nbrDataNode = 3;
 	public static  String NameNodeadresse;
-	private static Map<Integer, String> listemachine;
-	private static Map<String, INode> catalogue;
+	
+	/* nomFichier => INode associé */
+	public static Map<String, INode> catalogue;
+	/* port -> IP adress */
+	public static Map<Integer, String> listemachines;
+
+	
+	
+
+	public synchronized static Map<String, INode> getCatalogue() {
+		return catalogue;
+	}
+
+
+
+
+	public synchronized static void setCatalogue(Map<String, INode> catalogue) {
+		NameNode.catalogue = catalogue;
+	}
 
 
 
@@ -25,8 +45,13 @@ public class NameNode {
 	public static void main(String[] args) {
 		
 		/*Configurer le NameNode*/
-		NameNode.listemachine = new HashMap<Integer, String>();
 		NameNode.catalogue = new HashMap<String, INode>();
+		NameNode.listemachines  = new HashMap<Integer, String>();
+		
+		
+		
+		
+		
 		try {
 		/* récupérer l'adresse de la machine où le NameNode est lancé*/
 		InetAddress adresse = InetAddress.getLocalHost();
@@ -34,73 +59,120 @@ public class NameNode {
 		} catch (UnknownHostException e) {
 			e.printStackTrace();
 		}
-		/*1ere etape :Enregistrer les dataNodes connectés "TO DO"*/
-		try {
-			ServerSocket ss = new ServerSocket(NameNode.portNameNodeData);
-			for (int i = 1; i<=3; i++) {
-				Socket s = ss.accept();
-				
-				/*Récupération des objets de lecture et d'ecriture*/
-				ObjectInputStream br = new ObjectInputStream(s.getInputStream());
-				ObjectOutputStream bw = new ObjectOutputStream(s.getOutputStream());
-				
-				/*Reception de l'adresse de la machine.*/				
-				String adress = (String) br.readObject();
-				
-				/*Création du numéro de port à utiliser*/
-				int port = 4501+i;
-				
-				/*Envoi du numéro de port.*/
-				bw.writeObject(Integer.toString(port));
-				
-				/*Ajout du dataNode à la liste*/
-				NameNode.listemachine.put(port, adress);
-				br.close();
-				bw.close();
-				s.close();
-			}
-			ss.close();
-			/*Affichage liste des DataNode connecté*/
-			System.out.println("Liste des machines");
-			System.out.println("[" + NameNode.listemachine.get(4502)+"]");
-			System.out.println("[" + NameNode.listemachine.get(4503)+"]");
-			System.out.println("[" + NameNode.listemachine.get(4504)+"]");
-			
-		} catch (Exception e) {
-			e.printStackTrace();
-		}
 		
+		try {
+			ServerSocket serverEnregis = new ServerSocket(NameNode.portNameNodeData);
+			/*1ere etape : Enregistrer les dataNodes connectes*/
+			
+			/*
+			 * LANCEMENT d'UN THREAD QUI ENREGISTRE en permanence les Datanodes qui se connectent
+			 */
+			new Thread(new EnregistrementDataNodes(serverEnregis)).start();
+			
+		} catch (IOException e1) {
+			e1.printStackTrace();
+		}
 		
 		/*2ieme étape : renvoyer les INode correspondant au nom du fichier reçu*/
 		try {
 			ServerSocket ss = new ServerSocket(NameNode.portNameNodeClient);
+			
+			
+			int k = 0;
+			int count = 0;
 			while (true) {
 				Socket s = ss.accept();
+				
+				System.out.println("Nombre de machines fonctionnelles : " + NameNode.listemachines.size());
 				ObjectInputStream ois = new ObjectInputStream(s.getInputStream());
 				ObjectOutputStream oos = new ObjectOutputStream(s.getOutputStream());
+				
+				
 				String cmd = (String) ois.readObject();
 				String [] CmdLine = cmd.split("@");
 				String filename = CmdLine[1];
+				
+				int repFactor =  Integer.parseInt(CmdLine[2]);
+				int nbBlocs = Integer.parseInt(CmdLine[3]);
+				
 				if (CmdLine[0].equals("CMD_WRITE")) {
-					/*Création du Noeud*/
-					HashMap<Integer,String> mapNode = new HashMap<Integer,String>();
-					for (int i = 1; i<= 3; i++) {
-						/*Envoi au client de l'adresse et du port du data node et mise a jour du noeud*/
-						oos.writeObject(NameNode.listemachine.get(4501+i)+"@"+Integer.toString(4501+i));
-						mapNode.put(i,NameNode.listemachine.get(4501+i));
+					System.out.println("Reception d'une requete Write");
+					/* pour chaque bloc est associ� une liste de machines qui contient ses dups */
+					
+					HashMap<Integer, ArrayList<String>> mapNode = new HashMap<Integer,ArrayList<String>>();
+					
+					
+					
+					if (repFactor > NameNode.listemachines.size()) {
+						System.out.println("Desole Votre Facteur de réplication est plus grand que le nombre de machine, veuillez le diminuer pour pouvoir écrire :) !!");
+						// le break du NameNode à discuter
+					
+					} else {
+					
+						/* choix de repFactor dataNodes pour chaque bloc */
+						for (int i = 1; i<= nbBlocs; i++) {
+
+							
+							//   "IP@port" des machines associées au Bloc courant
+							ArrayList<String> listeMachinesBlocCourant = new ArrayList<String>();
+							/* envoi au client les adresses et ports des datanodes */
+							
+							
+							/* On attend d'avoir la liste des machines en exclusion mutuelle */
+							synchronized(NameNode.listemachines){
+								
+								ArrayList<Integer> portsFonctionnels= new ArrayList<Integer>();
+								for (Integer portFonctionnel :  NameNode.listemachines.keySet()){
+									portsFonctionnels.add(portFonctionnel);
+								}
+								
+								/* liste des ports choisis pour le bloc courant */
+								ArrayList<Integer> portsChoisis = new ArrayList<>();
+	
+								
+								/* On choisit les ports parmi ceux disponibles pour un bloc*/
+							    while (portsChoisis.size() < repFactor) {
+							    	int port = portsFonctionnels.get(k);
+							        portsChoisis.add(port);
+							        if (k == portsFonctionnels.size() - 1) {
+							        	k = 0;
+							        } else {
+							        	k++;
+							        }
+							    }
+							    
+								
+							    
+								for(int port : portsChoisis) {
+									String machine = NameNode.listemachines.get(port) + "@" + Integer.toString(port);
+									listeMachinesBlocCourant.add(machine);
+								}
+							
+							}
+							
+							oos.writeObject(listeMachinesBlocCourant);
+							mapNode.put(i,listeMachinesBlocCourant);
+							
+						}
+						/*Ajout du nouveau noeud au catalogue*/
+						INode newNode = new INode(filename,mapNode);
+						NameNode.catalogue.put(filename, newNode);	
+						System.out.println("Choix des machines effectué avec equilibre de charge ...");
+						System.out.println("Envoi des machines au client ...");
 					}
-					/*Ajout du nouveau noeud au catalogue*/
-					INode newNode = new INode(filename,mapNode);
-					NameNode.catalogue.put(filename, newNode);		
 				}
 				if (CmdLine[0].equals("CMD_READ")) {
-					INode node = NameNode.catalogue.get(filename);
+					System.out.println("Reception d'une requete Read ..");
+					INode node = NameNode.getCatalogue().get(filename);
 					oos.writeObject(node);
+					oos.writeObject(NameNode.listemachines);
 				}
 				if (CmdLine[0].equals("CMD_DELETE")) {
+					System.out.println("Reception d'une requete Delete ...");
 					/*Récupération du noeud qui décrit le fichier.*/
 					INode node = NameNode.catalogue.get(filename);
 					oos.writeObject(node);
+					oos.writeObject(NameNode.listemachines);
 					if (node != null) {
 					NameNode.catalogue.remove(filename);
 					}
