@@ -8,6 +8,8 @@ import java.io.FileWriter;
 
 public abstract class AbsFormat implements Format {
 
+
+	private static final long serialVersionUID = 1L;
 	private String fileName;
 	protected boolean openR;
 	protected boolean openW;

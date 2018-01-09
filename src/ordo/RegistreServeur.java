@@ -11,6 +11,7 @@ import java.util.Map;
 public class RegistreServeur {
 	private static Map<String, Serveur> listeserveurs = new HashMap<String, Serveur>();
 	public static String Registreadresse;
+	public static int nextServeur = 0;
 	public static final int portEcoute = 7000;
 	public static final int portJob = 8000;
 
@@ -21,11 +22,11 @@ public class RegistreServeur {
 	public static void retirerServeur(String name) {
 		listeserveurs.remove(name);
 	}
-	
+
 	public static Map<String, Serveur> getListeserveurs() {
 		return listeserveurs;
 	}
-	
+
 	public static String getNameByPortTcp(int portT) {
 		String res = null;
 		for (String serveurname : RegistreServeur.getListeserveurs().keySet()) {

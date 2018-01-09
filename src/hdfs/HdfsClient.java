@@ -21,7 +21,7 @@ import javafx.util.Pair;
 public class HdfsClient {
 
 	public static Map<Integer, String> listeMachinesMAJ = new HashMap<Integer, String>();
-
+	
 	
 
 	private static void ShellUsage() {
@@ -62,15 +62,11 @@ public class HdfsClient {
 		 
 		/* Test existence du fichier */
 		if (new File(localFSSourceFname).exists()) {
-			
-			
-			
 			/* Récupération de la liste des dataNode */
 			List<ArrayList<String>> listeBlocsMachines = HdfsHelper.getDataNode("CMD_WRITE", localFSSourceFname, repFactor, nbBlocs);
 
 			/* Création de l' Executor service */
 	        ExecutorService executeurWrite = Executors.newFixedThreadPool(repFactor);
-			
 			/* Envoi des données aux DataNode */
 			for(int l = 0; l < repFactor; l++) {
 				/* Création du fichier dans son format adéquat 

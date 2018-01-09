@@ -15,6 +15,10 @@ public class ThreadRegistre extends Thread {
 				Socket s = ss.accept();
 				ObjectInputStream ois = new ObjectInputStream(s.getInputStream());
 				ObjectOutputStream oos = new ObjectOutputStream(s.getOutputStream());
+				int port = 3015+RegistreServeur.nextServeur;
+				String servinfo = "serveur"+RegistreServeur.nextServeur+"@"+port;
+				RegistreServeur.nextServeur++;
+				oos.writeObject(servinfo);
 				Serveur serv = (Serveur) ois.readObject();
 				RegistreServeur.ajouterServeur(serv);
 				// Thread d'écoute heartbeat

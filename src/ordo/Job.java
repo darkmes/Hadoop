@@ -145,11 +145,16 @@ public class Job implements JobInterface {
 
 		/* Récupérer la liste des serveurs */
 		Map<String, Serveur> serveurs = JobHelper.getServeur();
-
-		/* Ici création de INoeud Manuelle pour test uniquement */
-
-		HashMap<String, LinkedList<Integer>> mapnode = HidoopHelper.recInode(this.getInputFname());
-
+		
+		/* appel de hdfsWrite */
+		HdfsClient.HdfsWrite(Type.LINE, this.getInputFname(),this.getNumberOfMaps(),this.getNumberOfMaps()*2);
+		try {
+			Thread.sleep(3000);
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+		HashMap<String, LinkedList<Integer>> mapnode = JobHelper.recInode(this.getInputFname());
+		
 		/* Colocalisation des blocs */
 
 		HashMap<String, LinkedList<Integer>> colNode = HidoopHelper.locNode(mapnode, nbrBloc);
@@ -160,8 +165,7 @@ public class Job implements JobInterface {
 
 		/***********************************************************************************************************/
 
-		/* appel de hdfsWrite */
-		// HdfsClient.HdfsWrite(Type.LINE, nameRes, 1);
+
 
 		/* Lancement des maps sur les machines distantes (serveurs) */
 		this.listeCallBacksMap = JobHelper.startMaps(nbrBloc, this.inputFname, colNode, mr, executeur, serveurs);

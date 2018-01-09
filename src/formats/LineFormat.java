@@ -3,6 +3,7 @@ package formats;
 
 public class LineFormat extends AbsFormat {
 
+	private static final long serialVersionUID = 1L;
 
 	public LineFormat(String name) {
 		super(name);

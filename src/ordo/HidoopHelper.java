@@ -23,39 +23,6 @@ import formats.KVFormat;
  */
 public class HidoopHelper {
 
-	/**************************************************************************************/
-	/*
-	 * Cette partie n'est pas encore correctement implémentée, ce sont que des
-	 * valeurs arbitraires pour effectuer les tests
-	 */
-	/**
-	 * Retourne la localisation des Blocs sur les différents noeuds
-	 * 
-	 * @param fname
-	 *            : le nom du fichier à localiser
-	 * @return : les différentes localisation
-	 */
-	public static HashMap<String, LinkedList<Integer>> recInode(String fname) {
-		HashMap<String, LinkedList<Integer>> res = new HashMap<String, LinkedList<Integer>>();
-
-		/* Ajout des valeurs arbitraires pour tests */
-
-		res.put("serveur0", new LinkedList<Integer>());
-		res.get("serveur0").add(1);
-		res.get("serveur0").add(2);
-		res.get("serveur0").add(3);
-
-		res.put("serveur1", new LinkedList<Integer>());
-		res.get("serveur1").add(4);
-		res.get("serveur1").add(3);
-
-		res.put("serveur2", new LinkedList<Integer>());
-		res.get("serveur2").add(3);
-		res.get("serveur2").add(2);
-		res.get("serveur2").add(4);
-		return res;
-
-	}
 
 	/**
 	 * Retourne les Bloc sur lesquels chaque Noeud va appliquer map, de facon

@@ -13,6 +13,7 @@ echo
 echo "-----------Lancement du NameNode-----------"
 echo
 java hdfs.NameNode &
+java ordo.RegistreServeur &
 echo "--------------NameNode lancé---------------"
 echo "---------Lancement de " $1 " DataNodes----------"
 echo
@@ -20,6 +21,7 @@ echo
 for ((i=0 ; i < $1 ; i++))
     do java hdfs.DataNode &
      echo "--------------DataNode lancé---------------"
+     do java ordo.DaemonImpl &
      echo
 done
 echo "------------fin de l'execution------------"

@@ -4,6 +4,7 @@ package formats;
 
 public class KVFormat extends AbsFormat {
 
+	private static final long serialVersionUID = 1L;
 
 	public KVFormat(String name) {
 		super(name);

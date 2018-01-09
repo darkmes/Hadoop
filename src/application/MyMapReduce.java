@@ -43,6 +43,7 @@ public class MyMapReduce implements MapReduce {
 	
 	public static void main(String args[]) {
 		Job j = new Job();
+		j.setNumberOfMaps(3);
 		j.setNumberOfReduces(2);
         j.setInputFormat(Format.Type.LINE);
         j.setInputFname(args[0]);

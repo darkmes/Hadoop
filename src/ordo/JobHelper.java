@@ -18,6 +18,32 @@ import formats.LineFormat;
 import map.MapReduce;
 
 public class JobHelper {
+	
+	/**
+	 * Retourne la localisation des Blocs sur les différents noeuds
+	 * 
+	 * @param fname
+	 *            : le nom du fichier à localiser
+	 * @return : les différentes localisation
+	 */
+	public static HashMap<String, LinkedList<Integer>> recInode(String fname) {
+		HashMap<String, LinkedList<Integer>> res = new HashMap<String, LinkedList<Integer>>();
+
+		try {
+			Socket s = new Socket(InetAddress.getByName(RegistreServeur.Registreadresse), RegistreServeur.portJob);
+			ObjectInputStream ois = new ObjectInputStream(s.getInputStream());
+			ObjectOutputStream oos = new ObjectOutputStream(s.getOutputStream());
+			oos.writeObject(fname);
+			res = (HashMap<String, LinkedList<Integer>>) ois.readObject();
+
+			ois.close();
+			oos.close();
+			s.close();
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+		return res;
+	}
 
 	/**
 	 * Récupère la liste des serveurs auprès du registre des serveurs
@@ -30,6 +56,7 @@ public class JobHelper {
 			Socket s = new Socket(InetAddress.getByName(RegistreServeur.Registreadresse), RegistreServeur.portJob);
 			ObjectInputStream ois = new ObjectInputStream(s.getInputStream());
 			ObjectOutputStream oos = new ObjectOutputStream(s.getOutputStream());
+			oos.writeObject("0");
 			res = (Map<String, Serveur>) ois.readObject();
 
 			ois.close();
@@ -85,9 +112,10 @@ public class JobHelper {
 
 						/*
 						 * Génération des nom des nameReaders et nameWriters les
-						 * blocs résultats ont le nom : BLOCjfilename.txt-res
 						 */
-						String nameReaderMapi = "BLOC" + j + inputFname;
+						int numport = 4502+Integer.parseInt(serverName.split("serveur")[1]);
+						String nomdeRep = "DataNode"+numport;
+						String nameReaderMapi = nomdeRep + "/BLOC" + j + inputFname;
 						String nameWriterMapi = "Mapped" + "BLOC" + j + inputFname;
 
 						/* Chercher le serveur distant dans l'annuaire */

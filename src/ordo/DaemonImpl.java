@@ -63,41 +63,10 @@ public class DaemonImpl extends UnicastRemoteObject implements Daemon {
 
 	public static void main(String args[]) {
 
-		// Numero du port
-		int port;
-		/* Adresse de la machine */
-		String URL;
-		try {
-			Integer I = new Integer(args[0]);
-			port = I.intValue();
-		} catch (Exception ex) {
-			System.out.println("Use : java DaemonImpl <port> <name>");
-			return;
-		}
-
 		try {
 
-			/* Creation de l'annuaire */
-			try {
-				Registry registry = LocateRegistry.createRegistry(port);
-				System.out.println("Registry created....");
-			} catch (RemoteException e) {
-				e.printStackTrace();
-			}
-
-			// Creation d'une instance du serveur
-			Daemon serveur = new DaemonImpl();
-
-			// Calcul de l'URL du serveur
-			URL = "//" + InetAddress.getLocalHost().getHostName() + ":" + port + "/" + args[1];
-			System.out.println(URL);
-
-			/* Enregistrement du serveur aupres du registry */
-			Naming.rebind(URL, serveur);
-
-			/* Creer l'instance du serveur pour le registre */
-			Serveur s = new Serveur(args[1], port, port - 1000, URL);
-
+			
+			
 			/* Connexion au registre de serveur */
 			InetAddress adrRegistre = InetAddress.getByName(RegistreServeur.Registreadresse);
 
@@ -107,15 +76,40 @@ public class DaemonImpl extends UnicastRemoteObject implements Daemon {
 			 */
 			ObjectOutputStream bw = new ObjectOutputStream(socket.getOutputStream());
 			ObjectInputStream br = new ObjectInputStream(socket.getInputStream());
+			
+			/*Récupération des infos du serveur*/
+			String serveurinfo = (String) br.readObject();
+			String[] servinf = serveurinfo.split("@");
+			int port = Integer.parseInt(servinf[1]);
+			String nomServeur = servinf[0];
+			
+			/* Creation de l'annuaire */
+			try {
+				Registry registry = LocateRegistry.createRegistry(port);
+				System.out.println("Registry created....");
+			} catch (RemoteException e) {
+				e.printStackTrace();
+			}
+			
+			// Creation d'une instance du serveur
+			Daemon serveur = new DaemonImpl();
+
+			// Calcul de l'URL du serveur
+			String URL = "//" + InetAddress.getLocalHost().getHostName() + ":" + port + "/" + nomServeur;
+			System.out.println(URL);
+			/* Enregistrement du serveur aupres du registry */
+			Naming.rebind(URL, serveur);
+
+			/* Creer l'instance du serveur pour le registre */
+			Serveur s = new Serveur(nomServeur, port, port - 1000, URL);
 
 			/* Envoi du serveur */
 			bw.writeObject(s);
 			
 			/*Confirmation de réception du serveur */
-			String msgg = (String) br.readObject();
+			br.readObject();
 			
 			/* Lancement du Thread d'émission HeartBeat */
-			//Thread.sleep(3000);
 			Thread emetteur = new EmetteurDaemon(port+1000);
 			emetteur.start();
 			
