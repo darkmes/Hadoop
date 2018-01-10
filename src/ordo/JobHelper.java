@@ -19,6 +19,21 @@ import map.MapReduce;
 
 public class JobHelper {
 	
+	public static void sendReduceLoc(Map<Integer,String> redLoc, String fname) {
+
+		try {
+			Socket s = new Socket(InetAddress.getByName(RegistreServeur.Registreadresse), RegistreServeur.portJob);
+			ObjectInputStream ois = new ObjectInputStream(s.getInputStream());
+			ObjectOutputStream oos = new ObjectOutputStream(s.getOutputStream());
+			oos.writeObject("reduce@"+fname);
+			oos.writeObject(redLoc);
+			ois.close();
+			oos.close();
+			s.close();
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+	}
 	
 	public static int getNbBloc (HashMap<String, LinkedList<Integer>> locBloc) {
 		int res = 0;
@@ -41,9 +56,8 @@ public class JobHelper {
 			Socket s = new Socket(InetAddress.getByName(RegistreServeur.Registreadresse), RegistreServeur.portJob);
 			ObjectInputStream ois = new ObjectInputStream(s.getInputStream());
 			ObjectOutputStream oos = new ObjectOutputStream(s.getOutputStream());
-			oos.writeObject(fname);
+			oos.writeObject("map@"+fname);
 			res = (HashMap<String, LinkedList<Integer>>) ois.readObject();
-
 			ois.close();
 			oos.close();
 			s.close();

@@ -18,6 +18,7 @@ import formats.Format.Type;
 import formats.KVFormat;
 import formats.LineFormat;
 import hdfs.HdfsClient;
+import hdfs.PanneDataNodeException;
 import map.MapReduce;
 
 public class Job implements JobInterface {
@@ -128,13 +129,16 @@ public class Job implements JobInterface {
 		/* String nameRes = this.getInputFname() + "-res"; */
 
 		/* Création du fichier sur la machine locale */
-		/*
-		 * File fichierResultat = new File(nameRes); try { if
-		 * (fichierResultat.createNewFile()) {
-		 * System.out.println("Fichier résultat a été crée"); } else {
-		 * System.out.println("Erreur création fichier"); } } catch (IOException
-		 * e1) { e1.printStackTrace(); }
-		 */
+		File fichierResultat = new File(this.getOutputFname());
+		try {
+			if (fichierResultat.createNewFile()) {
+				System.out.println("Fichier résultat a été crée");
+			} else {
+				System.out.println("Erreur création fichier");
+			}
+		} catch (IOException e1) {
+			e1.printStackTrace();
+		}
 
 		/* Récupération du Inoeud du fichier nécessaire */
 		/***********************************************************************************************************/
@@ -143,16 +147,19 @@ public class Job implements JobInterface {
 
 		/* Récupérer la liste des serveurs */
 		Map<String, Serveur> serveurs = JobHelper.getServeur();
-		
+
 		/* appel de hdfsWrite */
-		HdfsClient.HdfsWrite(Type.LINE, this.getInputFname(),this.getNumberOfMaps(),this.getNumberOfMaps()*2);
+		/*Création du callBack du write*/
+		CallBack cb;
 		try {
-			Thread.sleep(3000);
-		} catch (Exception e) {
-			e.printStackTrace();
+			cb = new CallBackImpl();
+			HdfsClient.HdfsWrite(Type.LINE, this.getInputFname(), this.getNumberOfMaps(), this.getNumberOfMaps() * 2,cb);
+			cb.getCalled();
+		} catch (RemoteException e1) {
+			e1.printStackTrace();
 		}
+
 		HashMap<String, LinkedList<Integer>> mapnode = JobHelper.recInode(this.getInputFname());
-		
 		/* Colocalisation des blocs */
 		int nbrBloc = JobHelper.getNbBloc(mapnode);
 		HashMap<String, LinkedList<Integer>> colNode = HidoopHelper.locNode(mapnode, nbrBloc);
@@ -163,8 +170,6 @@ public class Job implements JobInterface {
 
 		/***********************************************************************************************************/
 
-
-
 		/* Lancement des maps sur les machines distantes (serveurs) */
 		this.listeCallBacksMap = JobHelper.startMaps(nbrBloc, this.inputFname, colNode, mr, executeur, serveurs);
 
@@ -174,7 +179,7 @@ public class Job implements JobInterface {
 
 		/* Vérifier l'état des serveurs */
 
-		JobHelper.verifierExecution(servUtil);
+		// JobHelper.verifierExecution(servUtil);
 
 		/* Création de la liste des reducers */
 		HashMap<Integer, String> reducers = HidoopHelper.getReducers(this.numberOfReduces);
@@ -187,27 +192,33 @@ public class Job implements JobInterface {
 		System.out.println("Lancement de reduce");
 		List<String> reducersList = new LinkedList<String>();
 		reducersList.addAll(reducers.values());
-		this.listeCallBacksReduce = JobHelper.startReduces(nbrBloc, this.inputFname, this.outputFname, reducers, shufflers, mr,
-				executeur, serveurs);
+		this.listeCallBacksReduce = JobHelper.startReduces(nbrBloc, this.inputFname, this.outputFname, reducers,
+				shufflers, mr, executeur, serveurs);
+		
+		/*Envoyer la liste des reduce*/
+		/*Affichage de la liste de reduce*/
+		for (Integer i : reducers.keySet()) {
+			System.out.println(i + ":" + reducers.get(i));
+		}
+		JobHelper.sendReduceLoc(reducers,this.getOutputFname());
 
 		/* Vérifier l'état des serveurs */
 		List<String> servSR = new LinkedList<String>();
 		servSR.addAll(reducersList);
 		servSR.addAll(shufflers);
 
-		JobHelper.verifierExecution(servSR);
+		// JobHelper.verifierExecution(servSR);
 
 		/* Attendre que tous les callBacks soient reçus */
 		JobHelper.recCallBack(this.listeCallBacksReduce, this.numberOfReduces);
 
-		/*
-		 * HdfsClient.HdfsRead(nameRes, "resultatFusionMap.txt"); System.out.
-		 * println("Fusion des résultats des map effectuée avec succès ...");
-		 */
-
-		System.out.println("Reduce effectué avec succès ..");
-
-		// System.out.println("Création du fichier résultat " + nameRes);
+		try {
+			HdfsClient.HdfsRead(this.getOutputFname(), this.getOutputFname(), this.getNumberOfMaps(),
+					this.getNumberOfReduces());
+			System.out.println("Fusion des résultats  effectuée avec succès ...");
+		} catch (PanneDataNodeException e) {
+			System.out.println("Lecture des résultats impossible.");
+		}
 	}
 
 }

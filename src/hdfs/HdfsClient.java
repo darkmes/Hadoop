@@ -11,11 +11,11 @@ import java.util.Scanner;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
-
 import formats.Format;
 import formats.KVFormat;
 import formats.LineFormat;
 import javafx.util.Pair;
+import ordo.CallBack;
 
 
 public class HdfsClient {
@@ -56,7 +56,7 @@ public class HdfsClient {
 		}
 	}
 
-	public static void HdfsWrite(Format.Type fmt, String localFSSourceFname, int repFactor, int nbBlocs) {
+	public static void HdfsWrite(Format.Type fmt, String localFSSourceFname, int repFactor, int nbBlocs, CallBack cb) {
 		Format source;
 		long taille;
 		 
@@ -80,7 +80,7 @@ public class HdfsClient {
 					source = new KVFormat(localFSSourceFname);
 					taille = ((KVFormat) source).getLength();
 				}
-				executeurWrite.execute(new LanceurWrite(listeBlocsMachines, l, taille, source, localFSSourceFname, nbBlocs));
+				executeurWrite.execute(new LanceurWrite(listeBlocsMachines, l, taille, source, localFSSourceFname, nbBlocs,cb));
 			}
 			
 			
@@ -179,9 +179,9 @@ public class HdfsClient {
 						e.printStackTrace();
 					}
 					if (cmdsplit[1].equals("kv")) {
-						HdfsWrite(Format.Type.KV, cmdsplit[3], facteurRep, nbBlocs);
+						HdfsWrite(Format.Type.KV, cmdsplit[3], facteurRep, nbBlocs,null);
 					} else {
-						HdfsWrite(Format.Type.LINE, cmdsplit[3], facteurRep, nbBlocs);
+						HdfsWrite(Format.Type.LINE, cmdsplit[3], facteurRep, nbBlocs,null);
 					}
 					try {
 						Thread.sleep(2000);
@@ -199,9 +199,9 @@ public class HdfsClient {
 						e.printStackTrace();
 					}
 					if (cmdsplit[1].equals("kv")) {
-						HdfsWrite(Format.Type.KV, cmdsplit[3], facteurRep, nbBlocs);
+						HdfsWrite(Format.Type.KV, cmdsplit[3], facteurRep, nbBlocs,null);
 					} else {
-						HdfsWrite(Format.Type.LINE, cmdsplit[3], facteurRep, nbBlocs);
+						HdfsWrite(Format.Type.LINE, cmdsplit[3], facteurRep, nbBlocs,null);
 					}
 					try {
 						Thread.sleep(2000);
@@ -267,7 +267,7 @@ public class HdfsClient {
 					else {
 						return;
 					}
-					HdfsWrite(fmt, nameFile, facteurRep, nbBlocs);
+					HdfsWrite(fmt, nameFile, facteurRep, nbBlocs,null);
 				}
 			} catch (Exception ex) {
 				ex.printStackTrace();

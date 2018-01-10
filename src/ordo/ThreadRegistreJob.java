@@ -25,8 +25,14 @@ public class ThreadRegistreJob extends Thread {
 			if (cmd.equals("0")) {
 			oos.writeObject(RegistreServeur.getListeserveurs());
 			} else {
-				 Map<String, List<Integer>> tosend = getZoneMap(cmd);
-				oos.writeObject(getZoneMap(cmd));
+				String[] cmdtab = cmd.split("@");
+				if (cmdtab[0].equals("map")) {
+				 Map<String, List<Integer>> tosend = getZoneMap(cmdtab[1]);
+				 oos.writeObject(tosend);
+				} else {
+				Map<Integer,String> tosend = (Map<Integer,String>) ois.readObject();	
+				sendReduceLocToNM(tosend,cmdtab[1]);
+				}
 			}
 			oos.close();
 			ois.close();
@@ -53,6 +59,22 @@ public class ThreadRegistreJob extends Thread {
 			e.printStackTrace();
 		}
 		return res;
+	}
+	
+	public static void sendReduceLocToNM(Map<Integer,String> redLoc, String filename) {
+		try {
+			Socket s = new Socket(InetAddress.getByName(NameNode.NameNodeadresse),NameNode.portNameNodeReg);
+			ObjectOutputStream oos = new ObjectOutputStream(s.getOutputStream());
+			ObjectInputStream ois = new ObjectInputStream(s.getInputStream());
+			String cmd = "reduce"+"@"+filename;
+			oos.writeObject(cmd);
+			oos.writeObject(redLoc);
+			oos.close();
+			ois.close();
+			s.close();
+			} catch (Exception e) {
+				e.printStackTrace();
+			}
 	}
 
 }

@@ -12,11 +12,11 @@ import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Random;
 
 import formats.Format;
 import formats.Format.OpenMode;
 import formats.KV;
-import formats.KVFormat;
 
 /**
  * Classe contenant des méthodes statiques utiles
@@ -252,10 +252,16 @@ public class HidoopHelper {
 	 * @return liste de serveur
 	 */
 	public static HashMap<Integer, String> getReducers(int nbReduce) {
-		// pour cette version uniquement(valeur de test)
+		Random rd = new Random();
+		/*Methode à compléter*/
+		int compteurBloc = 1;
+		List<String> serveurtire = new LinkedList<String>();
 		HashMap<Integer, String> res = new HashMap<Integer, String>();
-		res.put(1, "serveur1");
-		res.put(2, "serveur2");
+		for (int i = 1; i<= nbReduce; i++) {
+			int tire = rd.nextInt(nbReduce)+1;
+		res.put(compteurBloc, "serveur1");
+		compteurBloc++;
+		}
 		return res;
 	}
 

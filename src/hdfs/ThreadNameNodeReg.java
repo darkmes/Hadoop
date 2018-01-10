@@ -26,7 +26,9 @@ public class ThreadNameNodeReg extends Thread {
 					Map<String,List<Integer>> tosend = getPosBloc(cmdtab[1]);
 					oos.writeObject(tosend);
 				} else if (cmdtab[0].equals("reduce")) {
-					/*Read Object a effectué pour le reduce*/
+					Map<Integer,String> redLoc = (Map<Integer,String>) ois.readObject();
+					addReducerToCatalogue(redLoc, cmdtab[1]);
+					System.out.println(NameNode.catalogue.get(cmdtab[1]).getFilename());
 				}
 				oos.close();
 				ois.close();
@@ -69,5 +71,30 @@ public class ThreadNameNodeReg extends Thread {
 		}
 
 		return res;
+	}
+	
+	public synchronized static void addReducerToCatalogue(Map<Integer,String> redLoc, String filename) {
+		Map<Integer,ArrayList<String>> mapNode = new HashMap<Integer,ArrayList<String>>();
+		for (Integer numBloc : redLoc.keySet()) {
+			/*Récupération du nom de serveur*/
+			String nameserver = redLoc.get(numBloc);
+			int numeroServeur = Integer.parseInt(nameserver.split("serveur")[1]);
+			
+			/*Création de la liste de machine*/
+			ArrayList<String> listemachine = new ArrayList<String>();
+			int port = numeroServeur + 4502;
+			String newmachine = NameNode.listemachines.get(port) + "@" + port ;
+			listemachine.add(newmachine);
+			
+			/*Ajout du bloc au mapNode*/
+			mapNode.put(numBloc,listemachine);
+		}
+		/*Création du INode*/
+		INode nouveau = new INode(filename, mapNode);
+		/*Ajout du Inode au catalogue*/
+		Map<String, INode> newcatalogue = NameNode.getCatalogue();
+		newcatalogue.put(filename,nouveau);
+		NameNode.setCatalogue(newcatalogue);
+		
 	}
 }
