@@ -47,6 +47,7 @@ public class MyMapReduce implements MapReduce {
 		j.setNumberOfReduces(2);
         j.setInputFormat(Format.Type.LINE);
         j.setInputFname(args[0]);
+        j.setOutputFname(args[0]+"-res");
         SortComparator comp = new Comparator(j.getNumberOfReduces());
         j.setSortComparator(comp);
        long t1 = System.currentTimeMillis();

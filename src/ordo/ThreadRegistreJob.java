@@ -2,8 +2,12 @@ package ordo;
 
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
+import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 import hdfs.NameNode;
 
@@ -21,7 +25,8 @@ public class ThreadRegistreJob extends Thread {
 			if (cmd.equals("0")) {
 			oos.writeObject(RegistreServeur.getListeserveurs());
 			} else {
-				oos.writeObject(NameNode.getPosBloc(cmd));
+				 Map<String, List<Integer>> tosend = getZoneMap(cmd);
+				oos.writeObject(getZoneMap(cmd));
 			}
 			oos.close();
 			ois.close();
@@ -30,6 +35,24 @@ public class ThreadRegistreJob extends Thread {
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
+	}
+	
+	public static  Map<String, List<Integer>> getZoneMap(String filename) {
+		Map<String, List<Integer>> res = new HashMap<>();
+		try {
+		Socket s = new Socket(InetAddress.getByName(NameNode.NameNodeadresse),NameNode.portNameNodeReg);
+		ObjectOutputStream oos = new ObjectOutputStream(s.getOutputStream());
+		ObjectInputStream ois = new ObjectInputStream(s.getInputStream());
+		String cmd = "map"+"@"+filename;
+		oos.writeObject(cmd);
+		res = (Map<String, List<Integer>>)ois.readObject();
+		oos.close();
+		ois.close();
+		s.close();
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+		return res;
 	}
 
 }

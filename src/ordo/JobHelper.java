@@ -19,6 +19,14 @@ import map.MapReduce;
 
 public class JobHelper {
 	
+	
+	public static int getNbBloc (HashMap<String, LinkedList<Integer>> locBloc) {
+		int res = 0;
+		for (List<Integer> l : locBloc.values()) {
+			res = Math.max(l.size(), res);
+		}
+		return res;
+	}
 	/**
 	 * Retourne la localisation des Blocs sur les différents noeuds
 	 * 
@@ -116,7 +124,7 @@ public class JobHelper {
 						int numport = 4502+Integer.parseInt(serverName.split("serveur")[1]);
 						String nomdeRep = "DataNode"+numport;
 						String nameReaderMapi = nomdeRep + "/BLOC" + j + inputFname;
-						String nameWriterMapi = "Mapped" + "BLOC" + j + inputFname;
+						String nameWriterMapi = nomdeRep + "/Mapped" + "BLOC" + j + inputFname;
 
 						/* Chercher le serveur distant dans l'annuaire */
 						Daemon serveurcourant = (Daemon) Naming.lookup(servers.get(serverName).getURL());
@@ -164,7 +172,7 @@ public class JobHelper {
 	 *            : l'executeur de thread
 	 * @return la liste des callBack à attendre
 	 */
-	public static List<CallBack> startReduces(int nbrBloc, String inputFname, List<String> reducers,
+	public static List<CallBack> startReduces(int nbrBloc, String inputFname,String outputFname, Map<Integer,String> reducers,
 			List<String> shufflers, MapReduce mr, ExecutorService executeur, Map<String, Serveur> servers) {
 		List<CallBack> res = new LinkedList<CallBack>();
 		try {
@@ -173,12 +181,14 @@ public class JobHelper {
 			 * Pour chaque serveur lancer la reception du shuffle et le reduce
 			 */
 
-			for (String serverName : reducers) {
-				System.out.println(serverName);
+			for (Integer numReduce : reducers.keySet()) {
+				String serverName = reducers.get(numReduce);
 				// Génération des noms du fichiers du Reduce
-				String nameWriterShuffle = "Shuffled" + inputFname;
+				int numport = 4502+Integer.parseInt(serverName.split("serveur")[1]);
+				String nomdeRep = "DataNode"+numport;
+				String nameWriterShuffle = nomdeRep+ "/Shuffled" + inputFname;
 				Format writerShuffle = new KVFormat(nameWriterShuffle);
-				String nameWriterReduce = "Reduced" + inputFname;
+				String nameWriterReduce = nomdeRep +"/BLOC"+ numReduce + outputFname;
 				Format writerReduce = new KVFormat(nameWriterReduce);
 
 				/* Chercher le serveur distant dans l'annuaire */
@@ -225,7 +235,9 @@ public class JobHelper {
 			List<Format> readers = new LinkedList<Format>();
 			/* Creation des formats */
 			for (Integer j : colNode.get(servername)) {
-				String nameReaderShuffle = "Mapped" + "BLOC" + j + inputFname;
+				int numport = 4502+Integer.parseInt(servername.split("serveur")[1]);
+				String nomdeRep = "DataNode"+numport;
+				String nameReaderShuffle = nomdeRep+"/Mapped" + "BLOC" + j + inputFname;
 				Format readerShuffle = new KVFormat(nameReaderShuffle);
 				readers.add(readerShuffle);
 			}

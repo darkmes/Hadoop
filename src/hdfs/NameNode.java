@@ -20,6 +20,7 @@ public class NameNode {
 
 	public static final int portNameNodeClient = 4500;
 	public static final int portNameNodeData = 10000;
+	public static final int portNameNodeReg= 10001;
 	public static  String NameNodeadresse;
 	
 	/* nomFichier => INode associé */
@@ -38,38 +39,7 @@ public class NameNode {
 		NameNode.catalogue = catalogue;
 	}
 
-	public synchronized static Map<Integer, String> getAnnuaire() {
-		Map<Integer, String> res = new HashMap<Integer, String>();
-		for (Integer port : NameNode.listemachines.keySet()) {
-			int numserveur = port - 4502;
-			res.put(port, "serveur"+ numserveur);
-		}
-		return res;
-	}
 	
-	public synchronized static Map<String,List<Integer>> getPosBloc(String filename) {
-		System.out.println(filename);
-		INode node = NameNode.catalogue.get(filename);
-		Map<Integer,String> annuaire = NameNode.getAnnuaire();
-		Map<String,List<Integer>> res = new HashMap<>();
-		
-		/*Création de la liste selon les machines*/
-		for (Integer numbloc : node.getMapNode().keySet()) {
-			ArrayList<String> listemachi = node.getMapNode().get(numbloc);
-			for (String machi : listemachi) {
-				/*Récupération du numéro de port*/
-				int port = Integer.parseInt(machi.split("@")[0]);
-				String nomDaemon = annuaire.get(port);
-				if (!res.containsKey(nomDaemon)) {
-					List<Integer> listebloc = new LinkedList<Integer>();
-					res.put(nomDaemon,listebloc);
-				}
-				res.get(nomDaemon).add(numbloc);
-			}
-		}
-		
-		return res;
-	}
 
 	public static void main(String[] args) {
 		
@@ -88,6 +58,10 @@ public class NameNode {
 		} catch (UnknownHostException e) {
 			e.printStackTrace();
 		}
+		
+		/*Lancer le thread pour communiquer avec le registre de serveur*/
+		ThreadNameNodeReg tNNr = new ThreadNameNodeReg();
+		tNNr.start();
 		
 		try {
 			ServerSocket serverEnregis = new ServerSocket(NameNode.portNameNodeData);

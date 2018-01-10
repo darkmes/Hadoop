@@ -62,6 +62,7 @@ public class HidoopHelper {
 				}
 			}
 			/* Ajout du numéro de bloc au serveur adéquat */
+			System.out.println(serCourant);
 			res.get(serCourant).add(i);
 			i++;
 		}

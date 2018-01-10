@@ -138,8 +138,6 @@ public class Job implements JobInterface {
 
 		/* Récupération du Inoeud du fichier nécessaire */
 		/***********************************************************************************************************/
-		int nbrBloc = 4;
-		int nbrServers = 3;
 		// Champ à récupérer sur Inode du fichier, à corriger pour le rendu
 		// final
 
@@ -156,7 +154,7 @@ public class Job implements JobInterface {
 		HashMap<String, LinkedList<Integer>> mapnode = JobHelper.recInode(this.getInputFname());
 		
 		/* Colocalisation des blocs */
-
+		int nbrBloc = JobHelper.getNbBloc(mapnode);
 		HashMap<String, LinkedList<Integer>> colNode = HidoopHelper.locNode(mapnode, nbrBloc);
 
 		/* La liste des serveurs utilisés */
@@ -189,7 +187,7 @@ public class Job implements JobInterface {
 		System.out.println("Lancement de reduce");
 		List<String> reducersList = new LinkedList<String>();
 		reducersList.addAll(reducers.values());
-		this.listeCallBacksReduce = JobHelper.startReduces(nbrBloc, this.inputFname, reducersList, shufflers, mr,
+		this.listeCallBacksReduce = JobHelper.startReduces(nbrBloc, this.inputFname, this.outputFname, reducers, shufflers, mr,
 				executeur, serveurs);
 
 		/* Vérifier l'état des serveurs */
