@@ -92,7 +92,6 @@ public class DataNode {
 						Bloc blocactu = datanode.listebloc.get("BLOC" + cmdsplit[2] + filename);
 						System.out.println("Reception d'une opération read de BLOC" + cmdsplit[2] + filename);
 						/* Envoi du format au client */
-						System.out.println(cmd);
 						Format formatactu=null;
 						if (blocactu != null) {
 

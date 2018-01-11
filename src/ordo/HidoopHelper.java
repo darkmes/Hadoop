@@ -61,8 +61,7 @@ public class HidoopHelper {
 					}
 				}
 			}
-			/* Ajout du numéro de bloc au serveur adéquat */
-			System.out.println(serCourant);
+			/* Ajout du numéro de bloc au serveur adéquat */;
 			res.get(serCourant).add(i);
 			i++;
 		}
@@ -249,17 +248,24 @@ public class HidoopHelper {
 	/**********************************************************************************/
 	/** Renvoie la liste des serveurs qui s'occupera de lancer les serveurs
 	 * @param nbReduce : nombre de reduce a lancer
-	 * @return liste de serveur
+	 * @param serveurdispo
+	 * @return liste de serveur Reduce
 	 */
-	public static HashMap<Integer, String> getReducers(int nbReduce) {
+
+	public static HashMap<Integer, String> getReducers(int nbReduce, List<String> serveurdispo) {
 		Random rd = new Random();
 		/*Methode à compléter*/
 		int compteurBloc = 1;
 		List<String> serveurtire = new LinkedList<String>();
 		HashMap<Integer, String> res = new HashMap<Integer, String>();
+		List<String> dejatire = new LinkedList<String>();
+		int tire;
 		for (int i = 1; i<= nbReduce; i++) {
-			int tire = rd.nextInt(nbReduce)+1;
-		res.put(compteurBloc, "serveur1");
+			do {
+			tire = rd.nextInt(serveurdispo.size());
+			} while (dejatire.contains(serveurdispo.get(tire)));
+		res.put(compteurBloc,serveurdispo.get(tire));
+			dejatire.add(serveurdispo.get(tire));
 		compteurBloc++;
 		}
 		return res;

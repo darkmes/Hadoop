@@ -27,9 +27,7 @@ public class ThreadNameNodeReg extends Thread {
 					oos.writeObject(tosend);
 				} else if (cmdtab[0].equals("reduce")) {
 					Map<Integer,String> redLoc = (Map<Integer,String>) ois.readObject();
-					addReducerToCatalogue(redLoc, cmdtab[1]);
-					System.out.println(NameNode.catalogue.get(cmdtab[1]).getFilename());
-				}
+					addReducerToCatalogue(redLoc, cmdtab[1]);				}
 				oos.close();
 				ois.close();
 				s.close();

@@ -119,15 +119,6 @@ public class Job implements JobInterface {
 		ExecutorService executeur = Executors.newFixedThreadPool(this.numberOfMaps);
 		ExecutorService execShuffle = Executors.newFixedThreadPool(this.numberOfMaps);
 
-		/*
-		 * Enregistrement du fichier résultat dans le catalogue : Création de
-		 * blocs résultats dans les machines distantes pour qu'ils soient
-		 * remplit après avec les opérations map associées
-		 */
-
-		/* Nom du fichier résultat */
-		/* String nameRes = this.getInputFname() + "-res"; */
-
 		/* Création du fichier sur la machine locale */
 		File fichierResultat = new File(this.getOutputFname());
 		try {
@@ -140,13 +131,11 @@ public class Job implements JobInterface {
 			e1.printStackTrace();
 		}
 
-		/* Récupération du Inoeud du fichier nécessaire */
-		/***********************************************************************************************************/
-		// Champ à récupérer sur Inode du fichier, à corriger pour le rendu
-		// final
-
 		/* Récupérer la liste des serveurs */
 		Map<String, Serveur> serveurs = JobHelper.getServeur();
+		/*Création d'une liste de serveur*/
+		List<String> serveursdispo = new LinkedList<String>();
+		serveursdispo.addAll(serveurs.keySet());
 
 		/* appel de hdfsWrite */
 		/*Création du callBack du write*/
@@ -158,12 +147,10 @@ public class Job implements JobInterface {
 		} catch (RemoteException e1) {
 			e1.printStackTrace();
 		}
-
 		HashMap<String, LinkedList<Integer>> mapnode = JobHelper.recInode(this.getInputFname());
 		/* Colocalisation des blocs */
 		int nbrBloc = JobHelper.getNbBloc(mapnode);
 		HashMap<String, LinkedList<Integer>> colNode = HidoopHelper.locNode(mapnode, nbrBloc);
-
 		/* La liste des serveurs utilisés */
 		List<String> servUtil = new LinkedList<String>();
 		servUtil.addAll(colNode.keySet());
@@ -178,11 +165,10 @@ public class Job implements JobInterface {
 		/* Tous les map ont terminé */
 
 		/* Vérifier l'état des serveurs */
-
-		// JobHelper.verifierExecution(servUtil);
+		 JobHelper.verifierExecution(servUtil);
 
 		/* Création de la liste des reducers */
-		HashMap<Integer, String> reducers = HidoopHelper.getReducers(this.numberOfReduces);
+		HashMap<Integer, String> reducers = HidoopHelper.getReducers(this.numberOfReduces,serveursdispo);
 
 		System.out.println("Lancement de shuffle");
 		/* Lancer les shuffles */
@@ -196,18 +182,13 @@ public class Job implements JobInterface {
 				shufflers, mr, executeur, serveurs);
 		
 		/*Envoyer la liste des reduce*/
-		/*Affichage de la liste de reduce*/
-		for (Integer i : reducers.keySet()) {
-			System.out.println(i + ":" + reducers.get(i));
-		}
 		JobHelper.sendReduceLoc(reducers,this.getOutputFname());
 
 		/* Vérifier l'état des serveurs */
 		List<String> servSR = new LinkedList<String>();
 		servSR.addAll(reducersList);
 		servSR.addAll(shufflers);
-
-		// JobHelper.verifierExecution(servSR);
+		JobHelper.verifierExecution(servSR);
 
 		/* Attendre que tous les callBacks soient reçus */
 		JobHelper.recCallBack(this.listeCallBacksReduce, this.numberOfReduces);

@@ -38,7 +38,11 @@ public class JobHelper {
 	public static int getNbBloc (HashMap<String, LinkedList<Integer>> locBloc) {
 		int res = 0;
 		for (List<Integer> l : locBloc.values()) {
-			res = Math.max(l.size(), res);
+			int resint = 0;
+			for (Integer nbloc : l) {
+				resint = Math.max(resint, nbloc);
+			}
+			res = Math.max(res,resint);
 		}
 		return res;
 	}
