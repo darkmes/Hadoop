@@ -139,14 +139,9 @@ public class Job implements JobInterface {
 
 		/* appel de hdfsWrite */
 		/*Création du callBack du write*/
-		CallBack cb;
-		try {
-			cb = new CallBackImpl();
-			HdfsClient.HdfsWrite(Type.LINE, this.getInputFname(), this.getNumberOfMaps(), this.getNumberOfMaps() * 2,cb);
-			cb.getCalled();
-		} catch (RemoteException e1) {
-			e1.printStackTrace();
-		}
+
+			HdfsClient.HdfsWrite(Type.LINE, this.getInputFname(), this.getNumberOfMaps(), this.getNumberOfMaps() * 2);
+	
 		HashMap<String, LinkedList<Integer>> mapnode = JobHelper.recInode(this.getInputFname());
 		/* Colocalisation des blocs */
 		int nbrBloc = JobHelper.getNbBloc(mapnode);

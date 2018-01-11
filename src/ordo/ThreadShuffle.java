@@ -2,7 +2,7 @@ package ordo;
 
 import java.util.List;
 
-import application.Comparator;
+import application.mymapreduce.Comparator;
 import formats.Format;
 
 public class ThreadShuffle extends Thread {

@@ -1,4 +1,4 @@
-package application;
+package application.mymapreduce;
 
 import java.io.Serializable;
 

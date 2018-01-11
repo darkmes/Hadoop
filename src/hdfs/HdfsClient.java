@@ -3,8 +3,10 @@
 package hdfs;
 
 import java.io.File;
+import java.rmi.RemoteException;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Scanner;
@@ -16,6 +18,7 @@ import formats.KVFormat;
 import formats.LineFormat;
 import javafx.util.Pair;
 import ordo.CallBack;
+import ordo.CallBackImpl;
 
 
 public class HdfsClient {
@@ -56,9 +59,10 @@ public class HdfsClient {
 		}
 	}
 
-	public static void HdfsWrite(Format.Type fmt, String localFSSourceFname, int repFactor, int nbBlocs, CallBack cb) {
+	public static void HdfsWrite(Format.Type fmt, String localFSSourceFname, int repFactor, int nbBlocs) {
 		Format source;
 		long taille;
+		List<CallBack> cbs = new LinkedList<CallBack>();
 		 
 		/* Test existence du fichier */
 		if (new File(localFSSourceFname).exists()) {
@@ -80,7 +84,23 @@ public class HdfsClient {
 					source = new KVFormat(localFSSourceFname);
 					taille = ((KVFormat) source).getLength();
 				}
-				executeurWrite.execute(new LanceurWrite(listeBlocsMachines, l, taille, source, localFSSourceFname, nbBlocs,cb));
+				/*Céation de l'objet callback*/
+				CallBack cb;
+				try {
+					cb = new CallBackImpl();
+					cbs.add(cb);
+					executeurWrite.execute(new LanceurWrite(listeBlocsMachines, l, taille, source, localFSSourceFname, nbBlocs,cb));
+				} catch (RemoteException e) {
+					e.printStackTrace();
+				}
+			}
+			/*Récéption des callBack*/
+			for (CallBack c : cbs) {
+				try {
+					((CallBackImpl) c).getCalled().acquire();
+				} catch (InterruptedException e) {
+					e.printStackTrace();
+				}
 			}
 			
 			
@@ -179,9 +199,9 @@ public class HdfsClient {
 						e.printStackTrace();
 					}
 					if (cmdsplit[1].equals("kv")) {
-						HdfsWrite(Format.Type.KV, cmdsplit[3], facteurRep, nbBlocs,null);
+						HdfsWrite(Format.Type.KV, cmdsplit[3], facteurRep, nbBlocs);
 					} else {
-						HdfsWrite(Format.Type.LINE, cmdsplit[3], facteurRep, nbBlocs,null);
+						HdfsWrite(Format.Type.LINE, cmdsplit[3], facteurRep, nbBlocs);
 					}
 					try {
 						Thread.sleep(2000);
@@ -199,9 +219,9 @@ public class HdfsClient {
 						e.printStackTrace();
 					}
 					if (cmdsplit[1].equals("kv")) {
-						HdfsWrite(Format.Type.KV, cmdsplit[3], facteurRep, nbBlocs,null);
+						HdfsWrite(Format.Type.KV, cmdsplit[3], facteurRep, nbBlocs);
 					} else {
-						HdfsWrite(Format.Type.LINE, cmdsplit[3], facteurRep, nbBlocs,null);
+						HdfsWrite(Format.Type.LINE, cmdsplit[3], facteurRep, nbBlocs);
 					}
 					try {
 						Thread.sleep(2000);
@@ -267,7 +287,7 @@ public class HdfsClient {
 					else {
 						return;
 					}
-					HdfsWrite(fmt, nameFile, facteurRep, nbBlocs,null);
+					HdfsWrite(fmt, nameFile, facteurRep, nbBlocs);
 				}
 			} catch (Exception ex) {
 				ex.printStackTrace();
